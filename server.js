@@ -3,8 +3,46 @@ const bodyParser = require('body-parser')
 const session = require('express-session')
 const axios = require('axios')
 const config = require('./config')
+const log4js = require('log4js')
 const app = require('express')()
+const logger = log4js.getLogger('app')
 
+log4js.configure({
+  // 定义输出方式
+  appenders: {
+    console: {
+      type: 'console'
+    },
+    http: {
+      'type': 'dateFile',
+      'filename': 'log/access.log',
+      'pattern': '-yyyy-MM-dd',
+      'compress': true
+    },
+    emergencies: {
+      type: 'file',
+      filename: 'log/errors.log'
+    },
+    error: {
+      'type': 'logLevelFilter',
+      'level': 'ERROR',
+      appender: 'emergencies'
+    }
+  },
+  // 设置以上定义输出方式的执行范围
+  categories: {
+    console: {
+      appenders: ['console'],
+      level: 'debug'
+    },
+    default: {
+      appenders: ['http', 'error'],
+      level: 'info'
+    }
+  }
+})
+
+app.use(log4js.connectLogger(log4js.getLogger('http')))
 // Sessions 来创建 req.session
 app.use(session({
   secret: 'super-secret-key',
@@ -30,11 +68,11 @@ app.use('/api/login', (req, res, next) => {
         req.session.accessToken = data.access_token
         return res.json({ accessToken: data.access_token })
       }).catch(err => {
-        throw err
+        logger.error('Something went wrong:', err)
       })
     }
   }).catch(err => {
-    throw err
+    logger.error('Something went wrong:', err)
   })
 })
 
@@ -44,7 +82,7 @@ function getToken (code) {
   return axios.get(reqUrl)
     .then(data => data.data)
     .catch(err => {
-      throw err
+      logger.error('Something went wrong:', err)
     })
 }
 
@@ -63,7 +101,7 @@ function login (identifier, credential) {
       hardwareVersion: 'wechat'
     }
   }).then(res => res.data).catch(err => {
-    throw err
+    logger.error('Something went wrong:', err)
   })
 }
 
