@@ -106,13 +106,18 @@ function login (identifier, credential) {
 }
 
 // 我们用这些选项初始化 Nuxt.js：
-const isProd = process.env.NODE_ENV === 'production'
-const nuxt = new Nuxt({ dev: !isProd })
+let config = require('../nuxt.config.js')
+config.dev = !(process.env.NODE_ENV === 'production')
+
+const nuxt = new Nuxt(config)
+
 // 生产模式不需要 build
-if (!isProd) {
+if (config.dev) {
   const builder = new Builder(nuxt)
   builder.build()
 }
+
 app.use(nuxt.render)
+
 app.listen(3000)
 console.log('Server is listening on http://localhost:3000')
